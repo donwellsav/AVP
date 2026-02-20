@@ -22,6 +22,13 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
 
+    <Window.InputBindings>
+        <KeyBinding Key="Space" Command="{Binding TakeCommand}"/>
+        <KeyBinding Key="Esc" Command="{Binding PanicBlackCommand}"/>
+        <KeyBinding Key="F5" Command="{Binding LoadCommand}"/> <!-- F5 to Load/Cue -->
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveShowCommand}"/>
+    </Window.InputBindings>
+
     <!-- ... Grid and Columns ... -->
     <Grid Margin="12,42,12,12">
         <Grid.ColumnDefinitions>
@@ -79,7 +86,10 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="RUNDOWN" FontWeight="Bold" Foreground="#AAAAAA" Margin="0,0,0,10"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="RUNDOWN" FontWeight="Bold" Foreground="#AAAAAA" Margin="0,0,10,10"/>
+                    <CheckBox Content="Show Mode (Lock)" IsChecked="{Binding ShowMode}" Foreground="White" Margin="10,0,0,0"/>
+                </StackPanel>
 
                 <DataGrid Grid.Row="1" ItemsSource="{Binding MediaItems}" SelectedItem="{Binding SelectedClip}"
                           AutoGenerateColumns="False" HeadersVisibility="Column"
@@ -97,6 +107,9 @@
                             </Style.Triggers>
                         </Style>
                      </DataGrid.RowStyle>
+                     <DataGrid.InputBindings>
+                        <MouseBinding Gesture="LeftDoubleClick" Command="{Binding LoadCommand}"/>
+                     </DataGrid.InputBindings>
                      <DataGrid.Columns>
                         <DataGridTextColumn Header="#" Width="40" Binding="{Binding Id}"/>
                         <DataGridTextColumn Header="State" Width="60" Binding="{Binding State}"/>
@@ -188,7 +201,10 @@
                         Cursor="Hand"/>
 
                 <Button Grid.Column="0" Content="stop" Command="{Binding StopCommand}" Margin="0,0,10,0" Background="#333333" Foreground="White"/>
-                <Button Grid.Column="2" Content="load" Command="{Binding LoadCommand}" Margin="10,0,0,0" Background="#333333" Foreground="White"/>
+                <StackPanel Grid.Column="2" Orientation="Vertical">
+                    <Button Content="load" Command="{Binding LoadCommand}" Margin="10,0,0,5" Background="#333333" Foreground="White"/>
+                    <Button Content="PANIC" Command="{Binding PanicBlackCommand}" Margin="10,0,0,0" Background="#CC0000" Foreground="White"/>
+                </StackPanel>
             </Grid>
         </Grid>
     </Grid>

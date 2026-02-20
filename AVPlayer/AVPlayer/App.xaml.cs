@@ -5,7 +5,7 @@ using Serilog;
 using System.Windows;
 using AVPlayer.Services;
 using AVPlayer.ViewModels;
-using AVPlayer.Views; // Added this
+using AVPlayer.Views;
 
 namespace AVPlayer
 {
@@ -25,11 +25,29 @@ namespace AVPlayer
         {
             base.OnStartup(e);
 
+            // Global Exception Handling
+            DispatcherUnhandledException += (s, args) =>
+            {
+                Log.Error(args.Exception, "Unhandled UI Exception");
+                System.Windows.MessageBox.Show($"An unhandled error occurred: {args.Exception.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                args.Handled = true; // Attempt to keep running
+            };
+
+            AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+            {
+                var ex = args.ExceptionObject as Exception;
+                Log.Fatal(ex, "Unhandled AppDomain Exception");
+                System.Windows.MessageBox.Show($"A fatal error occurred: {ex?.Message}", "Fatal Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            };
+
             var builder = Host.CreateApplicationBuilder();
 
             // Register Services
             builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
             builder.Services.AddSingleton<IScreenManager, ScreenManager>();
+            builder.Services.AddSingleton<IShowfileService, ShowfileService>();
+            builder.Services.AddSingleton<IOSLockService, OSLockService>();
+            builder.Services.AddSingleton<IOscService, OscService>();
 
             // Register ViewModels
             builder.Services.AddSingleton<MainViewModel>();
@@ -62,6 +80,10 @@ namespace AVPlayer
                 await _host.StopAsync();
                 _host.Dispose();
             }
+            // Allow sleep on exit (if not crashed)
+            // But OSLockService is singleton, we should probably resolve it and call AllowSleep
+            // Or rely on OS cleaning up process handles.
+
             base.OnExit(e);
             Log.CloseAndFlush();
         }

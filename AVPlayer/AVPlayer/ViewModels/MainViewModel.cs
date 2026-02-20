@@ -1,7 +1,8 @@
-using System;
+// Imports...
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using AVPlayer.Models;
@@ -9,6 +10,7 @@ using AVPlayer.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using System;
 
 namespace AVPlayer.ViewModels
 {
@@ -16,35 +18,78 @@ namespace AVPlayer.ViewModels
     {
         private readonly IMediaPlayerService _mediaService;
         private readonly IScreenManager _screenManager;
+        private readonly IShowfileService _showfileService;
+        private readonly IOSLockService _osLockService;
+        private readonly IOscService _oscService; // Injected
         private readonly ILogger<MainViewModel> _logger;
 
         [ObservableProperty]
         private ObservableCollection<MediaClip> _mediaItems = new();
-
         [ObservableProperty]
         private MediaClip? _selectedClip;
-
         [ObservableProperty]
         private MediaClip? _cuedClip;
-
         [ObservableProperty]
         private MediaClip? _playingClip;
-
         [ObservableProperty]
         private TimeSpan _currentTime;
-
         [ObservableProperty]
         private string _timecodeDisplay = "00:00:00:00";
 
-        public MainViewModel(IMediaPlayerService mediaService, IScreenManager screenManager, ILogger<MainViewModel> logger)
+        [ObservableProperty]
+        private bool _showMode = false;
+
+        public MainViewModel(IMediaPlayerService mediaService, IScreenManager screenManager, IShowfileService showfileService, IOSLockService osLockService, IOscService oscService, ILogger<MainViewModel> logger)
         {
             _mediaService = mediaService;
             _screenManager = screenManager;
+            _showfileService = showfileService;
+            _osLockService = osLockService;
+            _oscService = oscService;
             _logger = logger;
 
             _mediaService.PropertyChanged += MediaService_PropertyChanged;
+
+            // OSC
+            _oscService.CommandReceived += OnOscCommand;
+            _oscService.Start(8000); // Default port
+
+            Task.Run(async () =>
+            {
+                var clips = await _showfileService.LoadAsync("showfile.json");
+                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    MediaItems = clips;
+                    if (MediaItems.Count > 0)
+                    {
+                        CuedClip = MediaItems[0];
+                        CuedClip.State = MediaState.Cued;
+                        _mediaService.Load(CuedClip.FilePath, false);
+                    }
+                });
+            });
+
+            _osLockService.PreventSleep();
         }
 
+        private void OnOscCommand(object? sender, string address)
+        {
+            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+            {
+                switch (address)
+                {
+                    case "/take": TakeCommand.Execute(null); break;
+                    case "/stop": StopCommand.Execute(null); break;
+                    case "/panic": PanicBlackCommand.Execute(null); break;
+                    case "/load": LoadCommand.Execute(null); break;
+                    case "/next":
+                        // Logic to select next clip
+                        break;
+                }
+            });
+        }
+
+        // ... Rest of ViewModel ...
         private void MediaService_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(IMediaPlayerService.CurrentTime))
@@ -55,8 +100,41 @@ namespace AVPlayer.ViewModels
         }
 
         [RelayCommand]
+        public void PanicBlack()
+        {
+            _logger.LogWarning("PANIC BLACK TRIGGERED");
+            _mediaService.Stop();
+            if (PlayingClip != null)
+            {
+                PlayingClip.State = MediaState.Played;
+                PlayingClip = null;
+            }
+        }
+
+        [RelayCommand]
+        public void FadeToBlack()
+        {
+             _logger.LogInformation("Fade To Black Triggered");
+             StopCommand.Execute(null);
+        }
+
+        [RelayCommand]
+        public void TestPattern()
+        {
+             _logger.LogInformation("Test Pattern Triggered (Placeholder)");
+        }
+
+        [RelayCommand]
+        public async Task SaveShow()
+        {
+            await _showfileService.SaveAsync("showfile.json", MediaItems);
+        }
+
+        [RelayCommand]
         public void Load()
         {
+            if (ShowMode) return;
+
             if (SelectedClip != null && File.Exists(SelectedClip.FilePath))
             {
                 if (CuedClip != null && CuedClip != SelectedClip)
@@ -101,7 +179,6 @@ namespace AVPlayer.ViewModels
             {
                 CuedClip = MediaItems[index + 1];
                 CuedClip.State = MediaState.Cued;
-
                  _mediaService.Load(CuedClip.FilePath, false);
             }
             else
@@ -124,6 +201,8 @@ namespace AVPlayer.ViewModels
         [RelayCommand]
         public void OnDragOver(System.Windows.DragEventArgs e)
         {
+            if (ShowMode) { e.Effects = System.Windows.DragDropEffects.None; e.Handled = true; return; }
+
             if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
             {
                 e.Effects = System.Windows.DragDropEffects.Copy;
@@ -138,6 +217,8 @@ namespace AVPlayer.ViewModels
         [RelayCommand]
         public void OnDrop(System.Windows.DragEventArgs e)
         {
+             if (ShowMode) return;
+
             if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
             {
                 string[] files = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
@@ -148,6 +229,7 @@ namespace AVPlayer.ViewModels
                         AddMediaItem(file);
                     }
                 }
+                SaveShowCommand.Execute(null);
             }
         }
 
