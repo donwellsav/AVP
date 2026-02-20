@@ -5,10 +5,11 @@ using Serilog;
 using System.Windows;
 using AVPlayer.Services;
 using AVPlayer.ViewModels;
+using AVPlayer.Views; // Added this
 
 namespace AVPlayer
 {
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
         private IHost? _host;
 
@@ -28,12 +29,14 @@ namespace AVPlayer
 
             // Register Services
             builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
+            builder.Services.AddSingleton<IScreenManager, ScreenManager>();
 
             // Register ViewModels
             builder.Services.AddSingleton<MainViewModel>();
 
             // Register Views
             builder.Services.AddSingleton<MainWindow>();
+            builder.Services.AddTransient<OutputWindow>();
 
             // Logging
             builder.Logging.ClearProviders();
@@ -44,6 +47,9 @@ namespace AVPlayer
 
             var mediaService = _host.Services.GetRequiredService<IMediaPlayerService>();
             mediaService.Initialize();
+
+            var screenManager = _host.Services.GetRequiredService<IScreenManager>();
+            screenManager.Initialize();
 
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
