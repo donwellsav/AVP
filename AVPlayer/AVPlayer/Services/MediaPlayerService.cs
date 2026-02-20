@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -27,7 +28,9 @@ namespace AVPlayer.Services
         private TimeSpan _totalDuration;
         private bool _isPlaying;
 
-        // Video memory mapping (Simplified Software Renderer for Phase 3 Proof-of-Concept)
+        private TimeSpan? _inPoint;
+        private TimeSpan? _outPoint;
+
         private IntPtr _videoBuffer = IntPtr.Zero;
         private uint _videoWidth = 1920;
         private uint _videoHeight = 1080;
@@ -39,65 +42,37 @@ namespace AVPlayer.Services
         public WriteableBitmap? ActiveVideoSource
         {
             get => _activeVideoSource;
-            private set
-            {
-                if (_activeVideoSource != value)
-                {
-                    _activeVideoSource = value;
-                    OnPropertyChanged();
-                }
-            }
+            private set { if (_activeVideoSource != value) { _activeVideoSource = value; OnPropertyChanged(); } }
         }
 
         public TimeSpan CurrentTime
         {
             get => _currentTime;
-            private set
-            {
-                if (_currentTime != value)
-                {
-                    _currentTime = value;
-                    OnPropertyChanged();
-                }
-            }
+            private set { if (_currentTime != value) { _currentTime = value; OnPropertyChanged(); } }
         }
 
         public TimeSpan TotalDuration
         {
             get => _totalDuration;
-            private set
-            {
-                if (_totalDuration != value)
-                {
-                    _totalDuration = value;
-                    OnPropertyChanged();
-                }
-            }
+            private set { if (_totalDuration != value) { _totalDuration = value; OnPropertyChanged(); } }
         }
 
         public bool IsPlaying
         {
             get => _isPlaying;
-            private set
-            {
-                if (_isPlaying != value)
-                {
-                    _isPlaying = value;
-                    OnPropertyChanged();
-                }
-            }
+            private set { if (_isPlaying != value) { _isPlaying = value; OnPropertyChanged(); } }
         }
 
         public MediaPlayerService(ILogger<MediaPlayerService> logger)
         {
             _logger = logger;
-            _videoPitch = _videoWidth * 4; // BGRA 32-bit
+            _videoPitch = _videoWidth * 4;
             _videoLines = _videoHeight;
         }
 
         public void Initialize()
         {
-            try
+             try
             {
                 Core.Initialize();
                 _libVLC = new LibVLC("--verbose=0", "--avcodec-hw=d3d11va", "--no-osd");
@@ -105,7 +80,6 @@ namespace AVPlayer.Services
                 _playerA = new LibVLCSharp.Shared.MediaPlayer(_libVLC);
                 _playerB = new LibVLCSharp.Shared.MediaPlayer(_libVLC);
 
-                // Initial State: A is active, B is next
                 _activePlayer = _playerA;
                 _nextPlayer = _playerB;
 
@@ -119,9 +93,7 @@ namespace AVPlayer.Services
                      _activeVideoSource = new WriteableBitmap((int)_videoWidth, (int)_videoHeight, 96, 96, PixelFormats.Bgra32, null);
                      OnPropertyChanged(nameof(ActiveVideoSource));
                 });
-
-
-                _logger.LogInformation("MediaPlayerService initialized (LibVLC). Hardware decoding enabled.");
+                _logger.LogInformation("MediaPlayerService initialized.");
             }
             catch (Exception ex)
             {
@@ -131,173 +103,141 @@ namespace AVPlayer.Services
 
         private void SetupEvents(LibVLCSharp.Shared.MediaPlayer player)
         {
-            // Thread Safety: Ensure UI updates happen on Dispatcher
-
             player.TimeChanged += (s, e) =>
             {
                 if (s == _activePlayer)
                 {
-                     System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => CurrentTime = TimeSpan.FromMilliseconds(e.Time));
-                }
-            };
-
-            player.LengthChanged += (s, e) =>
-            {
-                if (s == _activePlayer)
-                {
-                    System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => TotalDuration = TimeSpan.FromMilliseconds(e.Length));
-                }
-            };
-
-            player.EndReached += (s, e) =>
-            {
-                 if (s == _activePlayer)
-                 {
-                    System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+                    var time = TimeSpan.FromMilliseconds(e.Time);
+                    if (_outPoint.HasValue && time >= _outPoint.Value && IsPlaying)
                     {
-                        IsPlaying = false;
-                        _logger.LogInformation("Playback finished.");
-                    });
-                 }
-            };
-
-            player.Playing += (s, e) =>
-            {
-                if (s == _activePlayer)
-                {
-                    System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => IsPlaying = true);
-                    _logger.LogInformation("Active Player Started Playing.");
-                }
-            };
-
-            player.Paused += (s, e) =>
-            {
-                if (s == _activePlayer) System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => IsPlaying = false);
-            };
-
-            player.Stopped += (s, e) =>
-            {
-                if (s == _activePlayer)
-                {
-                    System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+                         System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => Stop());
+                    }
+                    else
                     {
-                        IsPlaying = false;
-                        CurrentTime = TimeSpan.Zero;
-                    });
+                        System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => CurrentTime = time);
+                    }
                 }
             };
-
-            player.EncounteredError += (s, e) => _logger.LogError("Media Player Error.");
+            player.LengthChanged += (s, e) => { if (s == _activePlayer) System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => TotalDuration = TimeSpan.FromMilliseconds(e.Length)); };
+            player.EndReached += (s, e) => { if (s == _activePlayer) System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => { IsPlaying = false; _logger.LogInformation("Playback finished."); }); };
+            player.Playing += (s, e) => { if (s == _activePlayer) System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => IsPlaying = true); };
+            player.Paused += (s, e) => { if (s == _activePlayer) System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => IsPlaying = false); };
+            player.Stopped += (s, e) => { if (s == _activePlayer) System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => { IsPlaying = false; CurrentTime = TimeSpan.Zero; }); };
         }
 
         public void Load(string path, bool isAudio = false)
         {
             if (_libVLC == null || _nextPlayer == null) return;
-
-            if (!File.Exists(path))
-            {
-                _logger.LogError("File not found: {Path}", path);
-                return;
-            }
-
-            // Clean up old media
-            if (_nextPlayer.Media != null)
-            {
-                 // _nextPlayer.Media.Dispose(); // Careful disposing if still in use by A? No, they are separate.
-            }
+            if (!File.Exists(path)) return;
 
             var media = new Media(_libVLC, path, FromType.FromPath);
             media.AddOption(":network-caching=1000");
 
+            if (_nextPlayer.Media != null) { /* Dispose logic if needed */ }
             _nextPlayer.Media = media;
 
-            // Just parse, don't set callbacks yet.
             media.Parse(MediaParseOptions.ParseLocal);
             _logger.LogInformation("Loaded media into NEXT player: {Path}", path);
         }
 
+        public void SetLimits(TimeSpan? inPoint, TimeSpan? outPoint)
+        {
+            _inPoint = inPoint;
+            _outPoint = outPoint;
+            _logger.LogInformation("Set Limits: In={In}, Out={Out}", inPoint, outPoint);
+        }
+
         public void Take()
         {
-            // Critical Section
-            lock(_activePlayer!)
+             lock(_activePlayer!)
             {
                 if (_activePlayer == null || _nextPlayer == null) return;
 
-                _logger.LogInformation("TAKE: Swapping players.");
+                // Stop active player with optional fade?
+                // For hard cut, stop immediately.
+                if (_activePlayer.IsPlaying) _activePlayer.Stop();
 
-                // 1. Stop Current Active Player
-                if (_activePlayer.IsPlaying)
-                {
-                    _activePlayer.Stop();
-                }
-
-                // Unset callbacks
                 _activePlayer.SetVideoCallbacks(null, null, null);
 
-                // 2. Swap References
                 var temp = _activePlayer;
                 _activePlayer = _nextPlayer;
                 _nextPlayer = temp;
 
-                // 3. Set callbacks on NEW Active Player
                 _activePlayer.SetVideoFormat("RV32", _videoWidth, _videoHeight, _videoPitch);
                 _activePlayer.SetVideoCallbacks(LockVideo, UnlockVideo, DisplayVideo);
 
-                // 4. Play
+                _activePlayer.Volume = 100; // Reset Volume
                 _activePlayer.Play();
 
-                // UI Update
+                // Handle In-Point Seek
+                if (_inPoint.HasValue && _inPoint.Value > TimeSpan.Zero)
+                {
+                     // Using ThreadPool to avoid blocking UI or Lock
+                     Task.Run(async () =>
+                     {
+                         // Wait until state is Playing
+                         int retries = 0;
+                         while (!_activePlayer.IsPlaying && retries < 10) { await Task.Delay(50); retries++; }
+
+                         if (_activePlayer.IsPlaying)
+                         {
+                            _activePlayer.Time = (long)_inPoint.Value.TotalMilliseconds;
+                         }
+                     });
+                }
+
                 System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => IsPlaying = true);
             }
         }
 
         public void Play()
         {
-            if (_activePlayer != null && !_activePlayer.IsPlaying)
+             if (_activePlayer != null && !_activePlayer.IsPlaying)
             {
-                // Ensure callbacks are set if we resume directly
                 _activePlayer.SetVideoFormat("RV32", _videoWidth, _videoHeight, _videoPitch);
                 _activePlayer.SetVideoCallbacks(LockVideo, UnlockVideo, DisplayVideo);
                 _activePlayer.Play();
             }
         }
 
-        public void Pause()
-        {
-            if (_activePlayer != null) _activePlayer.Pause();
-        }
+        public void Pause() { if (_activePlayer != null) _activePlayer.Pause(); }
 
         public void Stop()
         {
-            if (_activePlayer != null) _activePlayer.Stop();
+            if (_activePlayer != null && _activePlayer.IsPlaying)
+            {
+                // Anti-Pop Fade Out (250ms)
+                // Need to capture the player instance to avoid race condition if swapped during fade
+                var playerToStop = _activePlayer;
+
+                Task.Run(async () =>
+                {
+                    int startVolume = playerToStop.Volume;
+                    for (int i = 0; i < 10; i++)
+                    {
+                        if (!playerToStop.IsPlaying) break;
+                        playerToStop.Volume = (int)(startVolume * (1.0 - (i / 10.0)));
+                        await Task.Delay(25);
+                    }
+                    playerToStop.Stop();
+                    playerToStop.Volume = 100; // Reset for next use
+                });
+            }
         }
 
-        public void SetPosition(float position)
-        {
-            if (_activePlayer != null) _activePlayer.Position = position;
-        }
+        public void SetPosition(float position) { if (_activePlayer != null) _activePlayer.Position = position; }
+        public void SetVolume(int volume) { if (_activePlayer != null) _activePlayer.Volume = volume; }
 
-        public void SetVolume(int volume)
-        {
-            if (_activePlayer != null)
-                _activePlayer.Volume = volume;
-        }
-
-        // ... Video Callbacks ...
+        // Callbacks
         private IntPtr LockVideo(IntPtr opaque, IntPtr planes)
         {
-            if (_videoBuffer != IntPtr.Zero)
-                 Marshal.WriteIntPtr(planes, _videoBuffer);
+            if (_videoBuffer != IntPtr.Zero) Marshal.WriteIntPtr(planes, _videoBuffer);
             return IntPtr.Zero;
         }
-
-        private void UnlockVideo(IntPtr opaque, IntPtr picture, IntPtr planes)
-        {
-        }
-
+        private void UnlockVideo(IntPtr opaque, IntPtr picture, IntPtr planes) {}
         private void DisplayVideo(IntPtr opaque, IntPtr picture)
         {
-            System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+             System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
             {
                 if (_activeVideoSource != null)
                 {
@@ -306,11 +246,7 @@ namespace AVPlayer.Services
                     {
                         int stride = _activeVideoSource.BackBufferStride;
                         int height = _activeVideoSource.PixelHeight;
-                        Buffer.MemoryCopy(
-                            (void*)_videoBuffer,
-                            (void*)_activeVideoSource.BackBuffer,
-                            stride * height,
-                            stride * height);
+                        Buffer.MemoryCopy((void*)_videoBuffer, (void*)_activeVideoSource.BackBuffer, stride * height, stride * height);
                     }
                     _activeVideoSource.AddDirtyRect(new Int32Rect(0, 0, (int)_videoWidth, (int)_videoHeight));
                     _activeVideoSource.Unlock();
@@ -328,11 +264,7 @@ namespace AVPlayer.Services
             _playerA?.Dispose();
             _playerB?.Dispose();
             _libVLC?.Dispose();
-            if (_videoBuffer != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(_videoBuffer);
-                _videoBuffer = IntPtr.Zero;
-            }
+            if (_videoBuffer != IntPtr.Zero) Marshal.FreeHGlobal(_videoBuffer);
         }
     }
 }

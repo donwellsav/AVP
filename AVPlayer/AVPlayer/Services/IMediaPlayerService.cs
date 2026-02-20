@@ -14,6 +14,7 @@ namespace AVPlayer.Services
         void Stop();
         void SetPosition(float position);
         void SetVolume(int volume);
+        void SetLimits(TimeSpan? inPoint, TimeSpan? outPoint); // Added for Trimming
 
         WriteableBitmap? ActiveVideoSource { get; }
         TimeSpan CurrentTime { get; }
