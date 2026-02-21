@@ -1,8 +1,7 @@
-﻿<Application x:Class="AVP.App"
+<Application x:Class="AVP.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:AVP"
-             StartupUri="MainWindow.xaml">
+             xmlns:local="clr-namespace:AVP">
     <Application.Resources>
 
     </Application.Resources>
