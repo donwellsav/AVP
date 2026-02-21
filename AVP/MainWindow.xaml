@@ -7,23 +7,98 @@
         xmlns:vm="clr-namespace:AVP.ViewModels"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
-        Title="{Binding Title}" Height="450" Width="800">
-    <Grid>
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="{Binding Title}" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+        Title="{Binding Title}" Height="600" Width="800"
+        Background="#1E1E1E">
 
-            <TextBox Text="{Binding MediaPath, UpdateSourceTrigger=PropertyChanged}" Width="400" Margin="0,0,0,10" ToolTip="Enter Media Path"/>
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#333333"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#555555"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#333333"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#555555"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style TargetType="GroupBox">
+             <Setter Property="Foreground" Value="White"/>
+             <Setter Property="BorderBrush" Value="#555555"/>
+             <Setter Property="Margin" Value="0,0,0,10"/>
+             <Setter Property="Padding" Value="10"/>
+        </Style>
+        <Style TargetType="Expander">
+             <Setter Property="Foreground" Value="White"/>
+             <Setter Property="BorderBrush" Value="#555555"/>
+             <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+    </Window.Resources>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
-                 <Button Content="Play" Command="{Binding PlayCommand}" Padding="15,5" Margin="5"/>
-                 <Button Content="Pause" Command="{Binding PauseCommand}" Padding="15,5" Margin="5"/>
-                 <Button Content="Stop" Command="{Binding StopCommand}" Padding="15,5" Margin="5"/>
-            </StackPanel>
+    <Grid Margin="20">
+        <StackPanel>
+            <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                 <Button Content="Open Video Window" Command="{Binding OpenVideoWindowCommand}" Padding="15,5" Margin="5"/>
-                 <Button Content="Close Video Window" Command="{Binding CloseVideoWindowCommand}" Padding="15,5" Margin="5"/>
-            </StackPanel>
+            <!-- Playback Controls -->
+            <GroupBox Header="Playback Control">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Media Path:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBox Grid.Column="1" Text="{Binding MediaPath, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="Play" Command="{Binding PlayCommand}" Width="80"/>
+                        <Button Content="Pause" Command="{Binding PauseCommand}" Width="80"/>
+                        <Button Content="Stop" Command="{Binding StopCommand}" Width="80"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Video Window Controls -->
+            <GroupBox Header="Video Window">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Open Video Window" Command="{Binding OpenVideoWindowCommand}"/>
+                    <Button Content="Close Video Window" Command="{Binding CloseVideoWindowCommand}"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Settings Expander -->
+            <Expander Header="Settings" IsExpanded="True">
+                <StackPanel Margin="10">
+                    <!-- OSC Port -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="OSC Port:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Text="{Binding OscPort, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <!-- Media Directory -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Media Directory:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Text="{Binding MediaDirectory}" IsReadOnly="True" Margin="0,0,5,0"/>
+                        <Button Grid.Column="2" Content="Browse..." Command="{Binding BrowseMediaDirectoryCommand}" Margin="0"/>
+                    </Grid>
+                </StackPanel>
+            </Expander>
+
         </StackPanel>
     </Grid>
 </Window>

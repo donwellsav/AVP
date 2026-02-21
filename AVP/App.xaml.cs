@@ -1,17 +1,23 @@
+using AVP.Models;
 using AVP.Services;
 using AVP.ViewModels;
 using AVP.Views;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Serilog;
 using System.Windows;
 using System;
+using System.IO;
 
 namespace AVP;
 
-public partial class App : Application
+// Explicitly use System.Windows.Application to resolve ambiguity with System.Windows.Forms
+public partial class App : System.Windows.Application
 {
     private IHost? _host;
+    private IConfiguration? _configuration;
 
     public App()
     {
@@ -25,12 +31,21 @@ public partial class App : Application
         try
         {
             var hostBuilder = Host.CreateDefaultBuilder(e.Args)
+                .ConfigureAppConfiguration((context, config) =>
+                {
+                    config.SetBasePath(AppContext.BaseDirectory);
+                    config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                })
                 .UseSerilog()
                 .ConfigureServices((context, services) =>
                 {
+                    _configuration = context.Configuration;
+
+                    // Bind AppSettings
+                    services.Configure<AppSettings>(context.Configuration.GetSection("AppSettings"));
+
                     // Register Services
                     services.AddSingleton<IMediaPlayerService, LibVlcPlayerService>();
-                    // Register OSC Service
                     services.AddSingleton<IOscService, OscService>();
 
                     // Register ViewModels
@@ -45,11 +60,12 @@ public partial class App : Application
             _host = hostBuilder.Build();
             await _host.StartAsync();
 
-            // Start OSC Service on default port 8000
+            // Start OSC Service with configured port
             try
             {
+                var appSettings = _host.Services.GetRequiredService<IOptions<AppSettings>>().Value;
                 var oscService = _host.Services.GetRequiredService<IOscService>();
-                oscService.Start(8000);
+                oscService.Start(appSettings.OscPort);
             }
             catch (Exception ex)
             {
@@ -62,7 +78,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             Log.Fatal(ex, "Application failed to start correctly");
-            MessageBox.Show($"Fatal Error: {ex.Message}", "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Windows.MessageBox.Show($"Fatal Error: {ex.Message}", "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -70,7 +86,6 @@ public partial class App : Application
     {
         if (_host != null)
         {
-            // Stop OSC Service
             var oscService = _host.Services.GetService<IOscService>();
             oscService?.Stop();
 
