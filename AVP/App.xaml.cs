@@ -27,6 +27,10 @@ public partial class App : Application
                 .UseSerilog()
                 .ConfigureServices((context, services) =>
                 {
+                    // Register Services
+                    // Using Singleton for MediaPlayerService as we likely want one playback engine instance
+                    services.AddSingleton<IMediaPlayerService, LibVlcPlayerService>();
+
                     // Register ViewModels
                     services.AddTransient<MainViewModel>();
 
