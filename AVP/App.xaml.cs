@@ -30,6 +30,8 @@ public partial class App : Application
                 {
                     // Register Services
                     services.AddSingleton<IMediaPlayerService, LibVlcPlayerService>();
+                    // Register OSC Service
+                    services.AddSingleton<IOscService, OscService>();
 
                     // Register ViewModels
                     services.AddTransient<MainViewModel>();
@@ -42,6 +44,17 @@ public partial class App : Application
 
             _host = hostBuilder.Build();
             await _host.StartAsync();
+
+            // Start OSC Service on default port 8000
+            try
+            {
+                var oscService = _host.Services.GetRequiredService<IOscService>();
+                oscService.Start(8000);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to start OSC Service on startup.");
+            }
 
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
@@ -57,6 +70,10 @@ public partial class App : Application
     {
         if (_host != null)
         {
+            // Stop OSC Service
+            var oscService = _host.Services.GetService<IOscService>();
+            oscService?.Stop();
+
             await _host.StopAsync();
             _host.Dispose();
         }
