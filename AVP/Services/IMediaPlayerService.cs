@@ -1,3 +1,5 @@
+using LibVLCSharp.Shared;
+
 namespace AVP.Services;
 
 public interface IMediaPlayerService
@@ -12,4 +14,7 @@ public interface IMediaPlayerService
     void Pause();
     void Stop();
     void SetPosition(float position);
+
+    // Added to expose MediaPlayer for VideoView binding
+    MediaPlayer? GetMediaPlayer();
 }

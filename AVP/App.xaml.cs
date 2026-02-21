@@ -1,5 +1,6 @@
 using AVP.Services;
 using AVP.ViewModels;
+using AVP.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -28,14 +29,15 @@ public partial class App : Application
                 .ConfigureServices((context, services) =>
                 {
                     // Register Services
-                    // Using Singleton for MediaPlayerService as we likely want one playback engine instance
                     services.AddSingleton<IMediaPlayerService, LibVlcPlayerService>();
 
                     // Register ViewModels
                     services.AddTransient<MainViewModel>();
+                    services.AddTransient<VideoViewModel>();
 
                     // Register Views
                     services.AddTransient<MainWindow>();
+                    services.AddTransient<VideoWindow>();
                 });
 
             _host = hostBuilder.Build();

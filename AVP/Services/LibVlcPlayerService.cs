@@ -128,6 +128,11 @@ public class LibVlcPlayerService : IMediaPlayerService, IDisposable
         _mediaPlayer.Position = safePosition;
     }
 
+    public MediaPlayer? GetMediaPlayer()
+    {
+        return _mediaPlayer;
+    }
+
     public void Dispose()
     {
         Dispose(true);

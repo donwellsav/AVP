@@ -10,12 +10,19 @@
         Title="{Binding Title}" Height="450" Width="800">
     <Grid>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="{Binding Title}" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-            <TextBox Text="{Binding MediaPath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="0,0,0,10" ToolTip="Enter Media Path"/>
+            <TextBlock Text="{Binding Title}" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+            <TextBox Text="{Binding MediaPath, UpdateSourceTrigger=PropertyChanged}" Width="400" Margin="0,0,0,10" ToolTip="Enter Media Path"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+                 <Button Content="Play" Command="{Binding PlayCommand}" Padding="15,5" Margin="5"/>
+                 <Button Content="Pause" Command="{Binding PauseCommand}" Padding="15,5" Margin="5"/>
+                 <Button Content="Stop" Command="{Binding StopCommand}" Padding="15,5" Margin="5"/>
+            </StackPanel>
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                 <Button Content="Play" Command="{Binding PlayCommand}" Padding="10,5" Margin="5"/>
-                 <Button Content="Pause" Command="{Binding PauseCommand}" Padding="10,5" Margin="5"/>
-                 <Button Content="Stop" Command="{Binding StopCommand}" Padding="10,5" Margin="5"/>
+                 <Button Content="Open Video Window" Command="{Binding OpenVideoWindowCommand}" Padding="15,5" Margin="5"/>
+                 <Button Content="Close Video Window" Command="{Binding CloseVideoWindowCommand}" Padding="15,5" Margin="5"/>
             </StackPanel>
         </StackPanel>
     </Grid>
