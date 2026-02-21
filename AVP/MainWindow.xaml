@@ -9,6 +9,14 @@
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
         Title="{Binding Title}" Height="450" Width="800">
     <Grid>
-        <TextBlock Text="{Binding Title}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding Title}" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+            <TextBox Text="{Binding MediaPath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="0,0,0,10" ToolTip="Enter Media Path"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                 <Button Content="Play" Command="{Binding PlayCommand}" Padding="10,5" Margin="5"/>
+                 <Button Content="Pause" Command="{Binding PauseCommand}" Padding="10,5" Margin="5"/>
+                 <Button Content="Stop" Command="{Binding StopCommand}" Padding="10,5" Margin="5"/>
+            </StackPanel>
+        </StackPanel>
     </Grid>
 </Window>
