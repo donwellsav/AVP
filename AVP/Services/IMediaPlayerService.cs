@@ -1,7 +1,10 @@
+using LibVLCSharp.Shared;
+
 namespace AVP.Services;
 
 public interface IMediaPlayerService
 {
+    MediaPlayer MediaPlayer { get; }
     bool IsPlaying { get; }
     long Duration { get; }
     long Position { get; }

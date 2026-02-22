@@ -29,13 +29,15 @@ public partial class App : Application
                 {
                     // Register Services
                     // Using Singleton for MediaPlayerService as we likely want one playback engine instance
-                    services.AddSingleton<IMediaPlayerService, LibVlcPlayerService>();
+                    services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
+                    services.AddSingleton<IOscService, OscService>();
 
                     // Register ViewModels
                     services.AddTransient<MainViewModel>();
 
                     // Register Views
                     services.AddTransient<MainWindow>();
+                    services.AddTransient<AVP.Views.VideoWindow>();
                 });
 
             _host = hostBuilder.Build();
