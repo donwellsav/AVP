@@ -4,19 +4,68 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AVP"
-        xmlns:vm="clr-namespace:AVP.ViewModels"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance vm:MainViewModel}"
-        Title="{Binding Title}" Height="450" Width="800">
-    <Grid>
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="{Binding Title}" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-            <TextBox Text="{Binding MediaPath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="0,0,0,10" ToolTip="Enter Media Path"/>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                 <Button Content="Play" Command="{Binding PlayCommand}" Padding="10,5" Margin="5"/>
-                 <Button Content="Pause" Command="{Binding PauseCommand}" Padding="10,5" Margin="5"/>
-                 <Button Content="Stop" Command="{Binding StopCommand}" Padding="10,5" Margin="5"/>
-            </StackPanel>
+        Title="{Binding Title}" Height="450" Width="800"
+        Background="{DynamicResource ApplicationBackgroundBrush}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
+
+        <!-- Main Content -->
+        <StackPanel Grid.Row="1">
+            <!-- Media Input -->
+            <ui:Card Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="Media Path" FontWeight="SemiBold" Margin="0,0,0,5" />
+                    <ui:TextBox Text="{Binding MediaPath, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter path to video file..." Margin="0,0,0,10" />
+                    <StackPanel Orientation="Horizontal">
+                        <ui:Button Command="{Binding PlayCommand}" Content="Play" Appearance="Primary" Margin="0,0,10,0" />
+                        <ui:Button Command="{Binding PauseCommand}" Content="Pause" Margin="0,0,10,0" />
+                        <ui:Button Command="{Binding StopCommand}" Content="Stop" />
+                    </StackPanel>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Video Window Control -->
+            <ui:Card Margin="0,10,0,0">
+                <StackPanel>
+                    <TextBlock Text="Output" FontWeight="SemiBold" Margin="0,0,0,5" />
+                    <ui:Button Command="{Binding OpenVideoWindowCommand}" Content="Open Video Window" />
+                </StackPanel>
+            </ui:Card>
         </StackPanel>
+
+        <!-- Settings Footer -->
+        <ui:Card Grid.Row="2" Margin="0,20,0,0">
+            <StackPanel>
+                <TextBlock Text="Settings" FontWeight="SemiBold" Margin="0,0,0,10" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="OSC Port:" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ui:NumberBox Value="{Binding OscPort, Mode=TwoWay}" Minimum="1024" Maximum="65535" Width="100" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                         <ui:Button Command="{Binding StartOscCommand}" Content="Start OSC" Margin="0,0,10,0" />
+                         <ui:Button Command="{Binding StopOscCommand}" Content="Stop OSC" Appearance="Danger" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock Text="{Binding IsOscRunning, StringFormat='OSC Status: {0}'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,10,0,0" />
+            </StackPanel>
+        </ui:Card>
     </Grid>
 </Window>

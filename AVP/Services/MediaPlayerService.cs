@@ -5,7 +5,7 @@ using System.IO;
 
 namespace AVP.Services;
 
-public class LibVlcPlayerService : IMediaPlayerService, IDisposable
+public class MediaPlayerService : IMediaPlayerService, IDisposable
 {
     private LibVLC _libVlc;
     private MediaPlayer _mediaPlayer;
@@ -19,11 +19,12 @@ public class LibVlcPlayerService : IMediaPlayerService, IDisposable
     }
 
     // Properties implementation
+    public MediaPlayer MediaPlayer => _mediaPlayer;
     public bool IsPlaying => _mediaPlayer?.IsPlaying ?? false;
     public long Duration => _mediaPlayer?.Length ?? 0;
     public long Position => (long)(_mediaPlayer?.Position ?? 0 * (_mediaPlayer?.Length ?? 0));
 
-    public LibVlcPlayerService()
+    public MediaPlayerService()
     {
         Log.Information("Initializing LibVLC Service...");
 
