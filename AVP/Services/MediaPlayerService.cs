@@ -46,7 +46,7 @@ public class MediaPlayerService : IMediaPlayerService, IDisposable
         _mediaPlayer = new MediaPlayer(_libVlc);
 
         // Subscribe to events for logging/debugging
-        _mediaPlayer.LengthChanged += (sender, e) => Log.Debug($"Media Duration Changed: {e.Length} ms");
+        _mediaPlayer.LengthChanged += (sender, e) => Log.Debug("Media Duration Changed: {Duration} ms", e.Length);
         _mediaPlayer.EndReached += (sender, e) => Log.Information("Media playback finished.");
         _mediaPlayer.EncounteredError += (sender, e) => Log.Error("LibVLC encountered an error during playback.");
     }
@@ -64,7 +64,7 @@ public class MediaPlayerService : IMediaPlayerService, IDisposable
 
         if (!File.Exists(mediaPath) && !isUrl)
         {
-            Log.Error($"Media file not found: {mediaPath}");
+            Log.Error("Media file not found: {MediaPath}", mediaPath);
             return;
         }
 
@@ -90,11 +90,11 @@ public class MediaPlayerService : IMediaPlayerService, IDisposable
             _mediaPlayer.Media = media;
             _currentMediaPath = mediaPath;
 
-            Log.Information($"Loaded media: {mediaPath}");
+            Log.Information("Loaded media: {MediaPath}", mediaPath);
         }
         catch (Exception ex)
         {
-             Log.Error(ex, $"Failed to load media: {mediaPath}");
+             Log.Error(ex, "Failed to load media: {MediaPath}", mediaPath);
         }
     }
 

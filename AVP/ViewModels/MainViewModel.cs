@@ -43,7 +43,7 @@ public partial class MainViewModel : ObservableObject
 
     private void OnOscMessageReceived(object? sender, OscMessage e)
     {
-        Log.Information($"OSC Message Received: {e.Address}");
+        Log.Information("OSC Message Received: {OscAddress}", e.Address);
 
         Application.Current.Dispatcher.Invoke(() =>
         {
