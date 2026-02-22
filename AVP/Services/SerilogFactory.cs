@@ -1,5 +1,4 @@
 using Serilog;
-using System.IO;
 
 namespace AVP.Services;
 

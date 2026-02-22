@@ -1,7 +1,5 @@
 using LibVLCSharp.Shared;
 using Serilog;
-using System;
-using System.IO;
 
 namespace AVP.Services;
 
