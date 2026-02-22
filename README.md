@@ -1,73 +1,96 @@
 # AVP - High-Performance Windows 11 AV Show Control
 
-AVP is a high-performance audio/video playback and show control application built for Windows 11 using .NET 9 and WPF. It leverages the power of LibVLC for robust media handling and follows modern architectural patterns for maintainability and scalability.
+Welcome to the AVP project. This document provides an in-depth analysis of our roadmap, current capabilities, and technical architecture.
 
-## Architecture
+## Overview
 
-The project follows a strict MVVM (Model-ViewModel-View) architecture:
+AVP is a high-performance audio/video playback and show control application designed for live event environments. Built on the modern Windows 11 platform using .NET 9 and WPF, it aims to provide a robust, reliable, and controllable media server solution.
 
-- **MVVM Framework**: [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) for observable objects and commands.
-- **Dependency Injection**: [Microsoft.Extensions.Hosting](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host) for bootstrapping the application, managing services, and DI.
-- **Logging**: [Serilog](https://serilog.net/) for structured logging, configured via `SerilogFactory`.
-- **Media Engine**: [LibVLCSharp](https://github.com/videolan/libvlcsharp) (VLC) for hardware-accelerated media playback across various formats.
-- **UI Framework**: Windows Presentation Foundation (WPF) targeting .NET 9.
+---
 
-## Getting Started
+## Part 1: User & Stakeholder Roadmap Analysis
 
-### Prerequisites
+This section outlines the strategic vision for AVP, detailing where we are today and where we are heading. Our goal is to evolve from a single-channel media player into a comprehensive show control system.
 
-- **Visual Studio 2022** (17.12 or newer recommended)
-- **.NET 9 SDK**
-- Windows 10/11 (Windows 11 recommended for the best experience)
+### Phase 1: Foundation (Current Status)
+**Focus:** Stability, Core Engine, and Basic Integration.
 
-### Installation
+We have successfully established the core architecture required for high-performance media playback. The current version includes:
+*   **Robust Media Engine:** Powered by **LibVLC**, ensuring compatibility with virtually all modern video and audio codecs (H.264, H.265, ProRes, MP4, MKV, MOV, WAV, FLAC).
+*   **Hardware Acceleration:** Utilization of GPU resources for smooth playback of high-resolution content.
+*   **Remote Control (OSC):** Implementation of Open Sound Control (OSC) allows AVP to be triggered by industry-standard consoles and software (e.g., QLab, Isadora, GrandMA, EOS).
+    *   *Supported Commands:* `/avp/play`, `/avp/pause`, `/avp/stop`, `/avp/volume`, `/avp/seek`.
+*   **Dedicated Video Output:** A separate `VideoWindow` for full-screen presentation, keeping the control interface distinct from the audience view.
 
-1.  **Clone the repository**:
+### Phase 2: Expansion (Next Steps)
+**Focus:** Flexibility and Advanced Control.
+
+The immediate roadmap focuses on expanding the capabilities of the playback engine to support more complex show requirements:
+*   **Multiple Video Outputs:** Support for multiple physical displays and projectors, allowing for independent routing of content to different screens.
+*   **Playlist & Queue Management:** Implementation of a playlist system to sequence media files, rather than loading them one by one.
+*   **Enhanced Transport Controls:** Precision seeking, frame-stepping, and loop controls for rigorous rehearsal and cueing workflows.
+*   **Configuration Interface:** A dedicated settings UI to configure OSC ports, audio device routing, and display preferences without editing configuration files.
+
+### Phase 3: Integration (Future Vision)
+**Focus:** Full Show Control and Automation.
+
+The long-term vision for AVP is to become a central node in a show control network:
+*   **Timeline & Cues:** A visual timeline for programming complex sequences of media events.
+*   **Advanced Networking:** Support for additional protocols (potentially Art-Net/sACN for DMX control) to synchronize lighting and video.
+*   **Failover & Redundancy:** Features designed for mission-critical environments, such as main/backup synchronization.
+
+---
+
+## Part 2: Developer Technical Analysis
+
+This section provides a technical deep-dive into the architecture and implementation details for contributors and developers.
+
+### Architecture Overview
+The project follows a strict **MVVM (Model-ViewModel-View)** pattern to ensure separation of concerns and testability.
+
+*   **Framework:** .NET 9 (Windows)
+*   **UI System:** Windows Presentation Foundation (WPF)
+*   **Dependency Injection:** `Microsoft.Extensions.Hosting` is used for bootstrapping the application and managing service lifecycles.
+
+### Key Components
+
+#### 1. Media Engine (`IMediaPlayerService`)
+*   **Implementation:** `LibVlcPlayerService` wraps the `LibVLCSharp` library.
+*   **Rationale:** LibVLC provides a battle-tested, cross-platform media engine that supports a vast array of codecs and hardware acceleration methods, avoiding the limitations of the native WPF `MediaElement`.
+*   **Threading:** Media loading and initialization are handled asynchronously (`Task.Run`) to prevent blocking the UI thread during heavy I/O operations.
+
+#### 2. OSC Integration (`IOscService`)
+*   **Implementation:** `OscService` utilizes the `CoreOSC` / `Rug.Osc` libraries for UDP communication.
+*   **Functionality:** Listens on a configurable port (default: 8000) for incoming OSC bundles and messages.
+*   **Thread Safety:** Incoming messages are dispatched to the UI thread or relevant service contexts to ensure thread-safe updates to the ViewModel and Player.
+
+#### 3. Logging & Diagnostics
+*   **Library:** `Serilog`
+*   **Configuration:** Structured logging is configured via `SerilogFactory`. Logs are written to `%APPDATA%\AVP\Logs` for post-show analysis and debugging.
+
+### Project Structure
+*   **`AVP/Services/`**: Contains business logic and hardware integration (Player, OSC, Logging).
+*   **`AVP/ViewModels/`**: Contains `MainViewModel` and other view models that bridge the UI and Services.
+*   **`AVP/Views/`**: Contains XAML definitions for `MainWindow` (Control Surface) and `VideoWindow` (Output).
+
+### Build Instructions
+
+1.  **Prerequisites:**
+    *   Visual Studio 2022 (v17.12+)
+    *   .NET 9 SDK
+    *   Windows 10/11
+
+2.  **Build:**
     ```bash
     git clone https://github.com/donwellsav/AVP.git
     cd AVP
-    ```
-2.  **Restore dependencies**:
-    ```bash
     dotnet restore
-    ```
-3.  **Build the project**:
-    ```bash
     dotnet build
     ```
 
-### Usage
+3.  **Run:**
+    Launch `AVP.exe` from the build output directory or via Visual Studio.
 
-1.  **Launch the application**: Run `AVP.exe` from the build output directory or via Visual Studio.
-2.  **Select Media**: Enter the full path to a media file (video or audio) in the input text box.
-3.  **Playback Control**:
-    -   Click **Play** to start or resume playback.
-    -   Click **Pause** to pause the current playback.
-    -   Click **Stop** to end playback and reset the position.
+---
 
-## Build & Deployment
-
-This project uses **GitHub Actions** for Continuous Integration (CI). Every time code is pushed to the `main` branch or a Pull Request is opened, a workflow automatically builds the application.
-
-### How to get the Build
-
-1.  Go to the **Actions** tab in this GitHub repository.
-2.  Click on the latest workflow run (e.g., "Build WPF App").
-3.  Scroll down to the **Artifacts** section.
-4.  Download the `AVP-Windows-Release` zip file.
-5.  Extract and run `AVP.exe`.
-
-## Render Configuration
-
-**Important Note:** This is a Windows Desktop Application (WPF). It cannot run on Render, which is a platform for Linux-based web services and static sites.
-
-If you have set up a Render service for this repository, it will not function as expected. We recommend using GitHub Actions for distribution.
-
-## Roadmap
-
-Feature tracking and future plans are managed via GitHub Issues. Key upcoming areas include:
-- OSC (Open Sound Control) Support
-- Multiple Video Windows
-- Enhanced Media Controls
-
-See the [Issues](https://github.com/donwellsav/AVP/issues) tab for more details.
+*This roadmap is a living document and will evolve as development progresses. Check the GitHub Issues for the most granular task tracking.*
