@@ -8,6 +8,7 @@ public class MediaPlayerService : IMediaPlayerService, IDisposable
     private LibVLC _libVlc;
     private MediaPlayer _mediaPlayer;
     private bool _disposed;
+    private string? _currentMediaPath;
 
     // Use property with custom getter/setter for Volume as defined in interface
     public int Volume
@@ -20,7 +21,7 @@ public class MediaPlayerService : IMediaPlayerService, IDisposable
     public MediaPlayer MediaPlayer => _mediaPlayer;
     public bool IsPlaying => _mediaPlayer?.IsPlaying ?? false;
     public long Duration => _mediaPlayer?.Length ?? 0;
-    public long Position => (long)(_mediaPlayer?.Position ?? 0 * (_mediaPlayer?.Length ?? 0));
+    public long Position => (long)((_mediaPlayer?.Position ?? 0) * (_mediaPlayer?.Length ?? 0));
 
     public MediaPlayerService()
     {
@@ -67,6 +68,12 @@ public class MediaPlayerService : IMediaPlayerService, IDisposable
             return;
         }
 
+        if (_currentMediaPath == mediaPath && _mediaPlayer.Media != null)
+        {
+            Log.Information("Media already loaded, skipping reload.");
+            return;
+        }
+
         try
         {
             // Create media resource
@@ -81,6 +88,7 @@ public class MediaPlayerService : IMediaPlayerService, IDisposable
             media.AddOption(":file-caching=300");
 
             _mediaPlayer.Media = media;
+            _currentMediaPath = mediaPath;
 
             Log.Information($"Loaded media: {mediaPath}");
         }
