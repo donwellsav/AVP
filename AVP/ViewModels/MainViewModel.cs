@@ -9,6 +9,7 @@ namespace AVP.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private readonly IMediaPlayerService _mediaPlayerService;
+    private readonly IWindowService _windowService;
 
     [ObservableProperty]
     private string title = "AVP - Audio Video Playback";
@@ -16,9 +17,17 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string mediaPath = string.Empty;
 
-    public MainViewModel(IMediaPlayerService mediaPlayerService)
+    public MainViewModel(IMediaPlayerService mediaPlayerService, IWindowService windowService)
     {
         _mediaPlayerService = mediaPlayerService;
+        _windowService = windowService;
+    }
+
+    [RelayCommand]
+    private void OpenVideoWindow()
+    {
+        Log.Information("Opening Video Window.");
+        _windowService.ShowVideoWindow();
     }
 
     [RelayCommand]

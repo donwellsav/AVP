@@ -17,6 +17,7 @@
                  <Button Content="Pause" Command="{Binding PauseCommand}" Padding="10,5" Margin="5"/>
                  <Button Content="Stop" Command="{Binding StopCommand}" Padding="10,5" Margin="5"/>
             </StackPanel>
+            <Button Content="Open Video Output" Command="{Binding OpenVideoWindowCommand}" Padding="10,5" Margin="5" HorizontalAlignment="Center"/>
         </StackPanel>
     </Grid>
 </Window>

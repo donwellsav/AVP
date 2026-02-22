@@ -8,7 +8,7 @@ using System;
 
 namespace AVP;
 
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     private IHost? _host;
 
@@ -30,12 +30,15 @@ public partial class App : Application
                     // Register Services
                     // Using Singleton for MediaPlayerService as we likely want one playback engine instance
                     services.AddSingleton<IMediaPlayerService, LibVlcPlayerService>();
+                    services.AddSingleton<IWindowService, WindowService>();
 
                     // Register ViewModels
                     services.AddTransient<MainViewModel>();
+                    services.AddTransient<VideoViewModel>();
 
                     // Register Views
                     services.AddTransient<MainWindow>();
+                    services.AddTransient<VideoWindow>();
                 });
 
             _host = hostBuilder.Build();
@@ -47,7 +50,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             Log.Fatal(ex, "Application failed to start correctly");
-            MessageBox.Show($"Fatal Error: {ex.Message}", "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Windows.MessageBox.Show($"Fatal Error: {ex.Message}", "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
