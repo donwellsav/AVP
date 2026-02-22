@@ -1,4 +1,4 @@
-name: Build WPF App
+name: Build and Test AVP
 
 on:
   push:
@@ -19,13 +19,16 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
-    - name: Restore dependencies
+    - name: Restore NuGet packages
       run: dotnet restore AVP.sln
 
-    - name: Build
+    - name: Build Solution (Release configuration)
       run: dotnet build AVP.sln --configuration Release --no-restore
 
-    - name: Publish (Create Release Artifacts)
+    - name: Run Unit Tests (if applicable)
+      run: dotnet test AVP.sln --no-build --configuration Release
+
+    - name: Publish Artifacts
       run: dotnet publish AVP/AVP.csproj -c Release -r win-x64 --self-contained false -o ./publish
 
     - name: Upload Build Artifact
