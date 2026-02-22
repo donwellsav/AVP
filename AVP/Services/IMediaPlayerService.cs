@@ -9,6 +9,7 @@ public interface IMediaPlayerService
     long Duration { get; }
     long Position { get; }
     int Volume { get; set; }
+    string? CurrentMediaPath { get; }
 
     void Load(string mediaPath);
     void Play();

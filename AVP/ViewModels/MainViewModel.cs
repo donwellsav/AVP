@@ -114,7 +114,11 @@ public partial class MainViewModel : ObservableObject
 
         if (!string.IsNullOrEmpty(MediaPath))
         {
-             _mediaPlayerService.Load(MediaPath);
+            // Only load if the path has changed
+            if (MediaPath != _mediaPlayerService.CurrentMediaPath)
+            {
+                _mediaPlayerService.Load(MediaPath);
+            }
         }
 
         _mediaPlayerService.Play();
