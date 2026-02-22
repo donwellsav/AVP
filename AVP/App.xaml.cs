@@ -31,6 +31,10 @@ public partial class App : Application
                     // Using Singleton for MediaPlayerService as we likely want one playback engine instance
                     services.AddSingleton<IMediaPlayerService, LibVlcPlayerService>();
 
+                    // OSC Service for remote control
+                    services.AddSingleton<IOscService, OscService>(sp =>
+                        new OscService(sp.GetRequiredService<IMediaPlayerService>(), 8000));
+
                     // Register ViewModels
                     services.AddTransient<MainViewModel>();
 
@@ -40,6 +44,9 @@ public partial class App : Application
 
             _host = hostBuilder.Build();
             await _host.StartAsync();
+
+            // Start OSC Service
+            _host.Services.GetRequiredService<IOscService>().Start();
 
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
@@ -55,6 +62,16 @@ public partial class App : Application
     {
         if (_host != null)
         {
+            // Stop OSC Service
+            try
+            {
+                _host.Services.GetService<IOscService>()?.Stop();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error stopping OSC Service");
+            }
+
             await _host.StopAsync();
             _host.Dispose();
         }
