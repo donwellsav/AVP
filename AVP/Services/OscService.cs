@@ -27,12 +27,12 @@ public class OscService : IOscService, IDisposable
             var token = _cancellationTokenSource.Token;
 
             _listenerTask = Task.Run(() => ListenLoop(token), token);
-            Log.Information($"OSC Service started on port {port}");
+            Log.Information("OSC Service started on port {Port}", port);
             return true;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, $"Failed to start OSC Service on port {port}");
+            Log.Error(ex, "Failed to start OSC Service on port {Port}", port);
             return false;
         }
     }
