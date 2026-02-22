@@ -9,6 +9,7 @@ public class LibVlcPlayerService : IMediaPlayerService, IDisposable
 {
     private LibVLC _libVlc;
     private MediaPlayer _mediaPlayer;
+    private Media? _media;
     private bool _disposed;
 
     // Use property with custom getter/setter for Volume as defined in interface
@@ -21,7 +22,7 @@ public class LibVlcPlayerService : IMediaPlayerService, IDisposable
     // Properties implementation
     public bool IsPlaying => _mediaPlayer?.IsPlaying ?? false;
     public long Duration => _mediaPlayer?.Length ?? 0;
-    public long Position => (long)(_mediaPlayer?.Position ?? 0 * (_mediaPlayer?.Length ?? 0));
+    public long Position => (long)((_mediaPlayer?.Position ?? 0) * (_mediaPlayer?.Length ?? 0));
 
     public LibVlcPlayerService()
     {
@@ -70,18 +71,19 @@ public class LibVlcPlayerService : IMediaPlayerService, IDisposable
 
         try
         {
-            // Create media resource
-            // Note: Media creation must be disposed after assignment or when player is done?
-            // In LibVLCSharp, Media is IDisposable. Assigning it to MediaPlayer.Media transfers ownership? No, usually not.
-            // We should manage Media lifecycle properly.
+            // Dispose previous media if any
+            _media?.Dispose();
 
-            using var media = new Media(_libVlc, mediaPath, isUrl ? FromType.FromLocation : FromType.FromPath);
+            // Create media resource
+            // In LibVLCSharp, Media is IDisposable. Assigning it to MediaPlayer.Media does NOT transfer ownership.
+            // We must manage the Media lifecycle manually to prevent Use-After-Free crashes.
+            _media = new Media(_libVlc, mediaPath, isUrl ? FromType.FromLocation : FromType.FromPath);
 
             // Add options for low latency or specific buffering if needed (can be parameterized later)
-            media.AddOption(":network-caching=300");
-            media.AddOption(":file-caching=300");
+            _media.AddOption(":network-caching=300");
+            _media.AddOption(":file-caching=300");
 
-            _mediaPlayer.Media = media;
+            _mediaPlayer.Media = _media;
 
             Log.Information($"Loaded media: {mediaPath}");
         }
@@ -141,6 +143,7 @@ public class LibVlcPlayerService : IMediaPlayerService, IDisposable
         if (disposing)
         {
             _mediaPlayer?.Stop();
+            _media?.Dispose();
             _mediaPlayer?.Dispose();
             _libVlc?.Dispose();
         }
