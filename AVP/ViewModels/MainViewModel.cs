@@ -24,7 +24,7 @@ public partial class MainViewModel : ObservableObject
     private string mediaPath = string.Empty;
 
     [ObservableProperty]
-    private double oscPort = 8000;
+    private int oscPort = 8000;
 
     [ObservableProperty]
     private bool isOscRunning;
@@ -76,7 +76,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanStartOsc))]
     private void StartOsc()
     {
-        if (_oscService.Start((int)OscPort))
+        if (_oscService.Start(OscPort))
         {
             IsOscRunning = true;
             StartOscCommand.NotifyCanExecuteChanged();
